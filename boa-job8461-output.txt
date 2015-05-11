@@ -1,0 +1,10 @@
+counts[] = java, 50692
+counts[] = c++, 40934
+counts[] = php, 32696
+counts[] = c, 30580
+counts[] = python, 15352
+counts[] = c#, 15305
+counts[] = javascript, 12748
+counts[] = perl, 9783
+counts[] = unix shell, 4379
+counts[] = delphi/kylix, 3842

@@ -1,0 +1,103 @@
+<html lang="en">
+<head>
+  <!--
+    Author: Seunghyun Yoo
+    Date: 2015. 2. 21
+  -->
+  <title>BOA output to CSV Converter</title>
+  
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <link href="bootstrap-3.3.2-dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<script src="jquery/jquery-2.1.3.min.js"></script>
+<script src="bootstrap-3.3.2-dist/js/bootstrap.min.js"></script>
+<script src="parse_boa.js"></script>
+<script>
+function convert(){
+  boa_output = $("textarea#boa_output").val();
+  splitted_output = boa_output.split("\n");
+  // variable_name [ <key_1> ] [ <key_2> ] ... = <value>;
+  $("#error").empty();
+  var found_error = false;
+  var temp_buffer = [];
+  for (var i=0;i<splitted_output.length;i++){
+    if (splitted_output[i].trim().length==0)
+      continue;
+    var result = window.boa_converter.parse_line(splitted_output[i]);
+    if (result.success == false){
+      found_error = true;
+      $("<p>Error@line " + i + ": <b>" + result.reason + "</b>("+splitted_output[i]+")</p>").appendTo("#error");
+    }
+    else{
+      temp_buffer.push( result );
+    }
+  }
+  
+  if ( found_error == false ){
+    var tmp_csv_string = "";
+    var max_count_key = 0;
+    for ( var i=0; i<temp_buffer.length; i++ ){
+      if ( max_count_key < temp_buffer[i].keys.length ){
+        max_count_key = temp_buffer[i].keys.length;
+      }
+    } 
+    // create a header row
+    tmp_csv_string = "var_name,";
+    for ( var i=0;i<max_count_key;i++){
+      tmp_csv_string = tmp_csv_string + "key_" + i + ",";
+    }
+    tmp_csv_string = tmp_csv_string + "value" + "\n";
+    for (var i=0;i<temp_buffer.length;i++){
+      tmp_csv_string = tmp_csv_string + window.boa_converter.csv_escape(temp_buffer[i].var_name) + ",";
+      for (var j=0;j<temp_buffer[i].keys.length;j++){
+        tmp_csv_string = tmp_csv_string + window.boa_converter.csv_escape(temp_buffer[i].keys[j]) + ",";
+      }
+      for (var j=temp_buffer[i].keys.length;j<max_count_key;++j){
+        tmp_csv_string = tmp_csv_string + ",";
+      }
+      tmp_csv_string = tmp_csv_string + window.boa_converter.csv_escape(temp_buffer[i].value) + "\n";
+    }
+    $("#boa_csv").val(tmp_csv_string);
+    download_csv();
+    $("<p>"+"success"+"</p>").appendTo("#error");
+  }
+};
+function download_csv(){ 
+  csv_content = $("#boa_csv").val();
+  var encoded_uri = encodeURIComponent(csv_content);
+  var file_name = "export-" + Math.floor(Math.random()*32768) + ".csv";
+  
+  var a = $('<a href="#"><button class="btn btn-warning">'+file_name+'</button></a>');
+  a.attr('href', 'data:text/csv;charset=utf-8,' + encoded_uri);
+  a.attr('download', file_name);
+  a.appendTo("#boa_generated");
+};
+</script>
+<h3>
+  BOA output to CSV converter
+</h3>
+<div>
+  <a href="#" onclick="convert();"><button class="btn btn-primary">Convert!</button></a>
+  <a href="#" onclick="download_csv();"><button class="btn btn-default">Export</button></a>
+  <span id="boa_generated">
+    <!--<a id="boa_download" href="#"><button class="btn btn-warning">.csv</button></a>-->
+  </span>
+</div>
+<p>If the size of an output file is too large (normally >1MB), please download a script, <a href="convert.tar.gz">convert.tar.gz</a>, which can be run in <a href="http://nodejs.org/">node.js</a>. usage: <code>node convert.js &lt;filename&gt;</code></p>
+<hr/>
+<h6>Paste the BOA output here:</h6>
+<div>
+<textarea id="boa_output" class="form-control" rows="8"></textarea>
+</div>
+<h6>Result</h6>
+<div>
+<textarea id="boa_csv" class="form-control" rows="8"></textarea>
+</div>
+<div id="error">
+</div>
+</body>
+</html>
